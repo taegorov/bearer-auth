@@ -1,13 +1,10 @@
 'use strict';
 
-process.env.SECRET = "toes";
-
-const middleware = require('../src/auth/middleware/bearer.js');
+const middleware = require('../src/auth/middleware/basic.js');
 const { db, users } = require('../src/auth/models/index.js');
-const jwt = require('jsonwebtoken')
 
 let userInfo = {
-  admin: { username: 'admin', password: 'password' },
+  admin: { username: 'admin-basic', password: 'password' },
 };
 
 // Pre-load our database with fake users
@@ -19,9 +16,12 @@ beforeAll(async () => {
 afterAll(async () => {
   await db.drop();
 
-});
+})
 
 describe('Auth Middleware', () => {
+
+  // admin:password: YWRtaW46cGFzc3dvcmQ=
+  // admin:foo: YWRtaW46Zm9v
 
   // Mock the express req/res/next that we need for each middleware call
   const req = {};
@@ -33,10 +33,11 @@ describe('Auth Middleware', () => {
 
   describe('user authentication', () => {
 
-    it('fails a login for a user (admin) with an incorrect token', () => {
+    it('fails a login for a user (admin) with the incorrect basic credentials', () => {
 
+      // Change the request to match this test case
       req.headers = {
-        authorization: 'Bearer thisisabadtoken',
+        authorization: 'Basic YWRtaW46Zm9v',
       };
 
       return middleware(req, res, next)
@@ -45,15 +46,13 @@ describe('Auth Middleware', () => {
           expect(res.status).toHaveBeenCalledWith(403);
         });
 
-    });
+    }); // it()
 
-    it('logs in a user with a proper token', () => {
+    it('logs in an admin user with the right credentials', () => {
 
-      const user = { username: 'admin' };
-      const token = jwt.sign(user, process.env.SECRET);
-
+      // Change the request to match this test case
       req.headers = {
-        authorization: `Bearer ${token}`,
+        authorization: 'Basic YWRtaW46cGFzc3dvcmQ=',
       };
 
       return middleware(req, res, next)
@@ -61,7 +60,7 @@ describe('Auth Middleware', () => {
           expect(next).toHaveBeenCalledWith();
         });
 
-    });
+    }); // it()
 
   });
 
